@@ -39,7 +39,7 @@ from util import ip2long
 class GeoIPError(Exception):
     pass
 
-class GeoIP:
+class GeoIP(object):
     
     _instances = {}
     
