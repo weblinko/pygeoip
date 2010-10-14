@@ -400,7 +400,7 @@ class GeoIP:
                                  'Country, City, or Region database')
             
         except ValueError:
-            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames.')
+            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames. (Address: %s)' % addr)
             
     def country_code_by_name(self, hostname):
         """
@@ -436,7 +436,7 @@ class GeoIP:
                 raise GeoIPError('Invalid database type; country_* methods expect '\
                                  'Country or City database')
         except ValueError:
-            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames.')
+            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames. (Address: %s)' % addr)
     
     def country_name_by_name(self, hostname):
         """
@@ -473,7 +473,7 @@ class GeoIP:
                 
             return self._get_org(ipnum)
         except ValueError:
-            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames.')
+            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames. (Address: %s)' % addr)
     
     def org_by_name(self, hostname):
         """
@@ -512,7 +512,7 @@ class GeoIP:
             
             return self._get_record(ipnum)
         except ValueError:
-            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames.')
+            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames. (Address: %s)' % addr)
             
     def record_by_name(self, hostname):
         """
@@ -554,7 +554,7 @@ class GeoIP:
                 
             return self._get_region(ipnum)
         except ValueError:
-            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames.')
+            raise GeoIPError('*_by_addr methods only accept IP addresses. Use *_by_name for hostnames. (Address: %s)' % addr)
             
     def region_by_name(self, hostname):
         """
