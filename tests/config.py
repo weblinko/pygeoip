@@ -1,6 +1,6 @@
 import os.path
 
-_data_dir = "C:\\Documents and Settings\\Jennifer\\Desktop\\pygeoiptestdata"
+_data_dir = "/Users/jennifere/pygeoip/tests/data"
 
 COUNTRY_DB_PATH = os.path.join(os.path.abspath(_data_dir), 'GeoIP.dat')
 ISP_DB_PATH = os.path.join(os.path.abspath(_data_dir), 'GeoIPISP.dat')

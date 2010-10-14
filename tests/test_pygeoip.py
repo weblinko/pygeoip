@@ -35,17 +35,17 @@ class BaseGeoIPTestCase(unittest.TestCase):
                                    'country_name': 'United States'}
         
         self.bbc_record_data = {'city': 'Over',
-                                'region_name': 'H2',
+                                'region_name': 'B8',
                                 'area_code': 0,
-                                'longitude': 0.01660000000001105,
+                                'longitude': -2.55,
                                 'country_code3': 'GBR',
-                                'latitude': 52.316699999999997,
+                                'latitude': 53.1833,
                                 'postal_code': None, 'dma_code': 0,
                                 'country_code': 'GB',
                                 'country_name': 'United Kingdom'}
         
         self.bbc_record_data_by_addr = {'city': 'Tadworth',
-                                'region_name': 'N7',
+                                'region_name': 'B8',
                                 'area_code': 0,
                                 'longitude': -0.23339999999998895,
                                 'country_code3': 'GBR',
@@ -55,7 +55,7 @@ class BaseGeoIPTestCase(unittest.TestCase):
                                 'country_name': 'United Kingdom'}
         
         self.google_region_data = {'region_name': 'CA', 'country_code': 'US'}
-        self.bbc_region_data = {'region_name': 'H2', 'country_code': 'GB'}
+        self.bbc_region_data = {'region_name': 'E9', 'country_code': 'GB'}
 
         self.google_org = 'Google'
         self.bbc_org = 'BBC'
@@ -132,7 +132,7 @@ class TestGeoIPRecordFunctions(BaseGeoIPTestCase):
         
         for key, value in bbc_record.iteritems():
             if key in equal_keys:
-                self.assertEqual(value, self.bbc_record_data_by_addr[key], 'Key: %s' % key)
+                self.assertEqual(value, self.bbc_record_data_by_addr[key], 'Key: %s, Test value: %s, Actual value: %s' % (key, self.bbc_record_data_by_addr[key], value))
             elif key in almost_equal_keys:
                 self.assertAlmostEqual(value, self.bbc_record_data_by_addr[key], 3, 'Key: %s' % key)
     
@@ -157,7 +157,7 @@ class TestGeoIPRecordFunctions(BaseGeoIPTestCase):
             if key in equal_keys:
                 self.assertEqual(value, self.bbc_record_data[key])
             elif key in almost_equal_keys:
-                self.assertAlmostEqual(value, self.bbc_record_data[key], 3, 'Key: %s' % key)
+                self.assertAlmostEqual(value, self.bbc_record_data[key], 3, 'Key: %s, Test value: %s, Actual value: %s' % (key, self.bbc_record_data[key], value))
                 
 class TestGeoIPRegionFunctions(BaseGeoIPTestCase):
     def setUp(self):
@@ -173,7 +173,7 @@ class TestGeoIPRegionFunctions(BaseGeoIPTestCase):
         
     def testRegionByAddrCityDB(self):
         self.assertEqual(self.gic.region_by_addr(self.us_ip), self.google_region_data)
-        self.assertEqual(self.gic.region_by_addr(self.gb_ip), {'region_name': 'N7', 'country_code': 'GB'})
+        self.assertEqual(self.gic.region_by_addr(self.gb_ip), {'region_name': 'B8', 'country_code': 'GB'})
         
         self.assertEqual(self.gir.region_by_addr(self.yahoo_ip), self.yahoo_region_data)
 

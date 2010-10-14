@@ -39,9 +39,7 @@ from util import ip2long
 class GeoIPError(Exception):
     pass
 
-class GeoIP(object):
-    
-    _instances = {}
+class GeoIPMetaclass(type):
     
     def __new__(cls, *args, **kwargs):
         """
@@ -52,15 +50,22 @@ class GeoIP(object):
         return the STANDARD one.
         """
         
+        if not hasattr(cls, '_instances'):
+            cls._instances = {}
+        
         if len(args) > 0:
             filename = args[0]
         elif 'filename' in kwargs:
             filename = kwargs['filename']
             
-        if not filename in _instances:
+        if not filename in cls._instances:
             cls._instances[filename] = type.__new__(cls, *args, **kwargs)
         
         return cls._instances[filename]
+        
+GeoIPBase = GeoIPMetaclass('GeoIPBase', (object,), {})
+
+class GeoIP(GeoIPBase):
     
     def __init__(self, filename, flags=0):
         """
