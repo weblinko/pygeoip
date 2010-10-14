@@ -1,0 +1,6 @@
+syntax: glob
+*.kpf
+*env
+*.pyc
+*.egg-info
+*.dat
