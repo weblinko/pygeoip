@@ -30,6 +30,6 @@ def ip2long(ip):
     @rtype: int
     """
     ip_array = ip.split('.')
-    ip_long = int(ip_array[0]) * 16777216 + int(ip_array[1]) * 65536 + int(ip_array[2]) * 256 + int(ip_array[3])
+    ip_long = long(ip_array[0]) * 16777216 + long(ip_array[1]) * 65536 + long(ip_array[2]) * 256 + long(ip_array[3])
     return ip_long  
 
