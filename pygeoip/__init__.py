@@ -472,7 +472,7 @@ class GeoIP(GeoIPBase):
             if not ipnum:
                 raise ValueError("Invalid IP address: %s" % addr)
             
-            if self._databaseType not in (ORG_EDITION, ISP_EDITION):
+            if self._databaseType not in (ORG_EDITION, ISP_EDITION, ASNUM_EDITION):
                 raise GeoIPError('Invalid database type; org_* methods expect '\
                                  'Org/ISP database')
                 
