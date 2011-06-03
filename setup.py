@@ -35,6 +35,7 @@ setup(name='pygeoip',
       author='Jennifer Ennis',
       author_email='zaylea@gmail.com',
       url='http://code.google.com/p/pygeoip/',
+      install_requires=['six'],
       packages=find_packages(exclude=['tests','test_*','data','apidocs']),
       license='LGPL',
       keywords='geoip')

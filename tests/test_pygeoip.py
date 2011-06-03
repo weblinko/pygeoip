@@ -1,8 +1,9 @@
+from __future__ import with_statement, absolute_import
 import unittest
 
 import pygeoip
 
-from config import *
+from .config import (CITY_DB_PATH, COUNTRY_DB_PATH, ISP_DB_PATH, ORG_DB_PATH, REGION_DB_PATH, _data_dir)
 
 class BaseGeoIPTestCase(unittest.TestCase):
     def setUp(self):
@@ -120,7 +121,7 @@ class TestGeoIPRecordFunctions(BaseGeoIPTestCase):
         
         google_record = self.gi.record_by_addr(self.us_ip)
         
-        for key, value in google_record.iteritems():
+        for key, value in google_record.items():
             if key in equal_keys:
                 self.assertEqual(value, self.google_record_data[key], 'Key: %s' % key)
             elif key in almost_equal_keys:
@@ -128,9 +129,9 @@ class TestGeoIPRecordFunctions(BaseGeoIPTestCase):
         
         bbc_record = self.gi.record_by_addr(self.gb_ip)   
         
-        print bbc_record
+        print(bbc_record)
         
-        for key, value in bbc_record.iteritems():
+        for key, value in bbc_record.items():
             if key in equal_keys:
                 self.assertEqual(value, self.bbc_record_data_by_addr[key], 'Key: %s, Test value: %s, Actual value: %s' % (key, self.bbc_record_data_by_addr[key], value))
             elif key in almost_equal_keys:
@@ -143,7 +144,7 @@ class TestGeoIPRecordFunctions(BaseGeoIPTestCase):
         
         google_record = self.gi.record_by_name(self.us_hostname)
         
-        for key, value in google_record.iteritems():
+        for key, value in google_record.items():
             if key in equal_keys:
                 self.assertEqual(value, self.google_record_data[key], 'Key: %s' % key)
             elif key in almost_equal_keys:
@@ -151,9 +152,9 @@ class TestGeoIPRecordFunctions(BaseGeoIPTestCase):
         
         bbc_record = self.gi.record_by_name(self.gb_hostname)   
         
-        print bbc_record
+        print(bbc_record)
         
-        for key, value in bbc_record.iteritems():
+        for key, value in bbc_record.items():
             if key in equal_keys:
                 self.assertEqual(value, self.bbc_record_data[key])
             elif key in almost_equal_keys:

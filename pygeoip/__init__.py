@@ -27,14 +27,16 @@ You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/lgpl.txt>.
 """
 
-from __future__ import with_statement
+from __future__ import with_statement, absolute_import, division
 import os
 import math
 import socket
 import mmap
 
-from const import *
-from util import ip2long
+from . import const
+from .util import ip2long
+
+import six
 
 class GeoIPError(Exception):
     pass
@@ -81,14 +83,14 @@ class GeoIP(GeoIPBase):
         self._filename = filename
         self._flags = flags
         
-        if self._flags & MMAP_CACHE:
+        if self._flags & const.MMAP_CACHE:
             with open(filename, 'rb') as f:
                 self._filehandle = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
         
         else:
             self._filehandle = open(filename, 'rb')
             
-            if self._flags & MEMORY_CACHE:
+            if self._flags & const.MEMORY_CACHE:
                 self._memoryBuffer = self._filehandle.read()
             
         self._setup_segments()
@@ -98,48 +100,51 @@ class GeoIP(GeoIPBase):
         Parses the database file to determine what kind of database is being used and setup
         segment sizes and start points that will be used by the seek*() methods later.
         """
-        self._databaseType = COUNTRY_EDITION
-        self._recordLength = STANDARD_RECORD_LENGTH
+        self._databaseType = const.COUNTRY_EDITION
+        self._recordLength = const.STANDARD_RECORD_LENGTH
         
         filepos = self._filehandle.tell()
         self._filehandle.seek(-3, os.SEEK_END)
         
-        for i in range(STRUCTURE_INFO_MAX_SIZE):
+        for i in range(const.STRUCTURE_INFO_MAX_SIZE):
             delim = self._filehandle.read(3)
 
-            if delim == (chr(255) * 3):
+            if delim == six.b(chr(255) * 3):
                 self._databaseType = ord(self._filehandle.read(1))
                 
                 if (self._databaseType >= 106):
                     # backwards compatibility with databases from April 2003 and earlier
                     self._databaseType -= 105
                 
-                if self._databaseType == REGION_EDITION_REV0:
-                    self._databaseSegments = STATE_BEGIN_REV0
+                if self._databaseType == const.REGION_EDITION_REV0:
+                    self._databaseSegments = const.STATE_BEGIN_REV0
                     
-                elif self._databaseType == REGION_EDITION_REV1:
-                    self._databaseSegments = STATE_BEGIN_REV1
+                elif self._databaseType == const.REGION_EDITION_REV1:
+                    self._databaseSegments = const.STATE_BEGIN_REV1
                     
-                elif self._databaseType in (CITY_EDITION_REV0,
-                                            CITY_EDITION_REV1,
-                                            ORG_EDITION,
-                                            ISP_EDITION,
-                                            ASNUM_EDITION):
+                elif self._databaseType in (const.CITY_EDITION_REV0,
+                                            const.CITY_EDITION_REV1,
+                                            const.ORG_EDITION,
+                                            const.ISP_EDITION,
+                                            const.ASNUM_EDITION):
                     self._databaseSegments = 0
-                    buf = self._filehandle.read(SEGMENT_RECORD_LENGTH)
+                    buf = self._filehandle.read(const.SEGMENT_RECORD_LENGTH)
                     
-                    for j in range(SEGMENT_RECORD_LENGTH):
-                        self._databaseSegments += (ord(buf[j]) << (j * 8))
+                    for j in range(const.SEGMENT_RECORD_LENGTH):
+                        if six.PY3:
+                            self._databaseSegments += (buf[j] << (j * 8))
+                        else:
+                            self._databaseSegments += (ord(buf[j]) << (j * 8))
                         
-                    if self._databaseType in (ORG_EDITION, ISP_EDITION):
-                        self._recordLength = ORG_RECORD_LENGTH
+                    if self._databaseType in (const.ORG_EDITION, const.ISP_EDITION):
+                        self._recordLength = const.ORG_RECORD_LENGTH
                         
                 break
             else:
                 self._filehandle.seek(-4, os.SEEK_CUR)
                 
-        if self._databaseType == COUNTRY_EDITION:
-            self._databaseSegments = COUNTRY_BEGIN
+        if self._databaseType == const.COUNTRY_EDITION:
+            self._databaseSegments = const.COUNTRY_BEGIN
             
         self._filehandle.seek(filepos, os.SEEK_SET)
     
@@ -162,11 +167,11 @@ class GeoIP(GeoIPBase):
         if not ipnum:
             raise ValueError("Invalid IP address: %s" % addr)
         
-        if self._databaseType != COUNTRY_EDITION:
+        if self._databaseType != const.COUNTRY_EDITION:
             raise GeoIPError('Invalid database type; country_* methods expect '\
                              'Country database')
         
-        return self._seek_country(ipnum) - COUNTRY_BEGIN
+        return self._seek_country(ipnum) - const.COUNTRY_BEGIN
     
     def _seek_country(self, ipnum):
         """
@@ -182,7 +187,7 @@ class GeoIP(GeoIPBase):
         
         for depth in range(31, -1, -1):
             
-            if self._flags & MEMORY_CACHE:
+            if self._flags & const.MEMORY_CACHE:
                 startIndex = 2 * self._recordLength * offset
                 length = 2 * self._recordLength
                 endIndex = startIndex + length
@@ -195,7 +200,10 @@ class GeoIP(GeoIPBase):
             
             for i in range(2):        
                 for j in range(self._recordLength):
-                    x[i] += ord(buf[self._recordLength * i + j]) << (j * 8)    
+                    if six.PY3:
+                        x[i] += buf[self._recordLength * i + j] << (j * 8)
+                    else:
+                        x[i] += ord(buf[self._recordLength * i + j]) << (j * 8)    
             
             if ipnum & (1 << depth):
     
@@ -231,7 +239,9 @@ class GeoIP(GeoIPBase):
         
         self._filehandle.seek(record_pointer, os.SEEK_SET)
         
-        org_buf = self._filehandle.read(MAX_ORG_RECORD_LENGTH)
+        org_buf = self._filehandle.read(const.MAX_ORG_RECORD_LENGTH)
+        if six.PY3:
+            org_buf = org_buf.decode()
         
         return org_buf[:org_buf.index(chr(0))]
     
@@ -247,36 +257,36 @@ class GeoIP(GeoIPBase):
         country_code = ''
         region = ''
         
-        if self._databaseType == REGION_EDITION_REV0:
+        if self._databaseType == const.REGION_EDITION_REV0:
             seek_country = self._seek_country(ipnum)
-            seek_region = seek_country - STATE_BEGIN_REV0
+            seek_region = seek_country - const.STATE_BEGIN_REV0
             if seek_region >= 1000:
                 country_code = 'US'
-                region = ''.join([chr((seek_region / 1000) / 26 + 65), chr((seek_region / 1000) % 26 + 65)])
+                region = ''.join([chr((seek_region // 1000) // 26 + 65), chr((seek_region // 1000) % 26 + 65)])
             else:
-                country_code = COUNTRY_CODES[seek_region]
+                country_code = const.COUNTRY_CODES[seek_region]
                 region = ''
-        elif self._databaseType == REGION_EDITION_REV1:
+        elif self._databaseType == const.REGION_EDITION_REV1:
             seek_country = self._seek_country(ipnum)
-            seek_region = seek_country - STATE_BEGIN_REV1
-            if seek_region < US_OFFSET:
+            seek_region = seek_country - const.STATE_BEGIN_REV1
+            if seek_region < const.US_OFFSET:
                 country_code = '';
                 region = ''
-            elif seek_region < CANADA_OFFSET:
+            elif seek_region < const.CANADA_OFFSET:
                 country_code = 'US'
-                region = ''.join([chr((seek_region - US_OFFSET) / 26 + 65), chr((seek_region - US_OFFSET) % 26 + 65)])
-            elif seek_region  < WORLD_OFFSET:
+                region = ''.join([chr((seek_region - const.US_OFFSET) // 26 + 65), chr((seek_region - const.US_OFFSET) % 26 + 65)])
+            elif seek_region  < const.WORLD_OFFSET:
                 country_code = 'CA'
-                region = ''.join([chr((seek_region - CANADA_OFFSET) / 26 + 65), chr((seek_region - CANADA_OFFSET) % 26 + 65)])
+                region = ''.join([chr((seek_region - const.CANADA_OFFSET) // 26 + 65), chr((seek_region - const.CANADA_OFFSET) % 26 + 65)])
             else:
-                i = (seek_region - WORLD_OFFSET) / FIPS_RANGE
-                if i in COUNTRY_CODES:
-                    country_code = COUNTRY_CODES[(seek_region - WORLD_OFFSET) / FIPS_RANGE]
+                i = (seek_region - const.WORLD_OFFSET) // const.FIPS_RANGE
+                if i in const.COUNTRY_CODES:
+                    country_code = const.COUNTRY_CODES[(seek_region - const.WORLD_OFFSET) // const.FIPS_RANGE]
                 else:
                     country_code = ''
                 region = ''
                 
-        elif self._databaseType in (CITY_EDITION_REV0, CITY_EDITION_REV1):
+        elif self._databaseType in (const.CITY_EDITION_REV0, const.CITY_EDITION_REV1):
             rec = self._get_record(ipnum)
             country_code = rec['country_code'] if 'country_code' in rec else ''
             region = rec['region_name'] if 'region_name' in rec else ''
@@ -301,23 +311,23 @@ class GeoIP(GeoIPBase):
         record_pointer = seek_country + (2 * self._recordLength - 1) * self._databaseSegments
         
         self._filehandle.seek(record_pointer, os.SEEK_SET)
-        record_buf = self._filehandle.read(FULL_RECORD_LENGTH)
+        record_buf = self._filehandle.read(const.FULL_RECORD_LENGTH)
         
         record = {}
         
         record_buf_pos = 0
-        char = ord(record_buf[record_buf_pos])
-        record['country_code'] = COUNTRY_CODES[char]
-        record['country_code3'] = COUNTRY_CODES3[char]
-        record['country_name'] = COUNTRY_NAMES[char]
+        char = record_buf[record_buf_pos] if six.PY3 else ord(record_buf[record_buf_pos])
+        record['country_code'] = const.COUNTRY_CODES[char]
+        record['country_code3'] = const.COUNTRY_CODES3[char]
+        record['country_name'] = const.COUNTRY_NAMES[char]
         record_buf_pos += 1
         str_length = 0
         
         # get region
-        char = ord(record_buf[record_buf_pos+str_length])
+        char = record_buf[record_buf_pos+str_length] if six.PY3 else ord(record_buf[record_buf_pos+str_length])
         while (char != 0):
             str_length += 1
-            char = ord(record_buf[record_buf_pos+str_length])
+            char = record_buf[record_buf_pos+str_length] if six.PY3 else ord(record_buf[record_buf_pos+str_length])
             
         if str_length > 0:
             record['region_name'] = record_buf[record_buf_pos:record_buf_pos+str_length]
@@ -326,10 +336,10 @@ class GeoIP(GeoIPBase):
         str_length = 0
         
         # get city
-        char = ord(record_buf[record_buf_pos+str_length])
+        char = record_buf[record_buf_pos+str_length] if six.PY3 else ord(record_buf[record_buf_pos+str_length])
         while (char != 0):
             str_length += 1
-            char = ord(record_buf[record_buf_pos+str_length])
+            char = record_buf[record_buf_pos+str_length] if six.PY3 else ord(record_buf[record_buf_pos+str_length])
         
         if str_length > 0:
             record['city'] = record_buf[record_buf_pos:record_buf_pos+str_length]
@@ -338,10 +348,10 @@ class GeoIP(GeoIPBase):
         str_length = 0
         
         # get the postal code
-        char = ord(record_buf[record_buf_pos+str_length])
+        char = record_buf[record_buf_pos+str_length] if six.PY3 else ord(record_buf[record_buf_pos+str_length])
         while (char != 0):
             str_length += 1
-            char = ord(record_buf[record_buf_pos+str_length])
+            char = record_buf[record_buf_pos+str_length] if six.PY3 else ord(record_buf[record_buf_pos+str_length])
         
         if str_length > 0:
             record['postal_code'] = record_buf[record_buf_pos:record_buf_pos+str_length]
@@ -354,24 +364,24 @@ class GeoIP(GeoIPBase):
         latitude = 0
         longitude = 0
         for j in range(3):
-            char = ord(record_buf[record_buf_pos])
+            char = record_buf[record_buf_pos] if six.PY3 else ord(record_buf[record_buf_pos])
             record_buf_pos += 1
             latitude += (char << (j * 8))
             
         record['latitude'] = (latitude/10000.0) - 180.0
         
         for j in range(3):
-            char = ord(record_buf[record_buf_pos])
+            char = record_buf[record_buf_pos] if six.PY3 else ord(record_buf[record_buf_pos])
             record_buf_pos += 1
             longitude += (char << (j * 8))
             
         record['longitude'] = (longitude/10000.0) - 180.0
         
-        if self._databaseType == CITY_EDITION_REV1:
+        if self._databaseType == const.CITY_EDITION_REV1:
             dmaarea_combo = 0
             if record['country_code'] == 'US':
                 for j in range(3):
-                    char = ord(record_buf[record_buf_pos])
+                    char = record_buf[record_buf_pos] if six.PY3 else ord(record_buf[record_buf_pos])
                     record_buf_pos += 1
                     dmaarea_combo += (char << (j*8))
                 
@@ -381,8 +391,8 @@ class GeoIP(GeoIPBase):
             record['dma_code'] = 0
             record['area_code'] = 0
                 
-        if 'dma_code' in record and record['dma_code'] in DMA_MAP:
-            record['metro_code'] = DMA_MAP[record['dma_code']]
+        if 'dma_code' in record and record['dma_code'] in const.DMA_MAP:
+            record['metro_code'] = const.DMA_MAP[record['dma_code']]
         else:
             record['metro_code'] = ''
                 
@@ -399,11 +409,11 @@ class GeoIP(GeoIPBase):
         @rtype: str
         """
         try:
-            if self._databaseType == COUNTRY_EDITION:
+            if self._databaseType == const.COUNTRY_EDITION:
                 country_id = self._lookup_country_id(addr)   
-                return COUNTRY_CODES[country_id]
-            elif self._databaseType in (REGION_EDITION_REV0, REGION_EDITION_REV1,
-                                          CITY_EDITION_REV0, CITY_EDITION_REV1):
+                return const.COUNTRY_CODES[country_id]
+            elif self._databaseType in (const.REGION_EDITION_REV0, const.REGION_EDITION_REV1,
+                                          const.CITY_EDITION_REV0, const.CITY_EDITION_REV1):
                 return self.region_by_addr(addr)['country_code']
             else:
                 raise GeoIPError('Invalid database type; country_* methods expect '\
@@ -437,10 +447,10 @@ class GeoIP(GeoIPBase):
         @rtype: str
         """
         try:
-            if self._databaseType == COUNTRY_EDITION:
+            if self._databaseType == const.COUNTRY_EDITION:
                 country_id = self._lookup_country_id(addr)
-                return COUNTRY_NAMES[country_id]
-            elif self._databaseType in (CITY_EDITION_REV0, CITY_EDITION_REV1):
+                return const.COUNTRY_NAMES[country_id]
+            elif self._databaseType in (const.CITY_EDITION_REV0, const.CITY_EDITION_REV1):
                 return self.record_by_addr(addr)['country_name']
             else:
                 raise GeoIPError('Invalid database type; country_* methods expect '\
@@ -477,7 +487,7 @@ class GeoIP(GeoIPBase):
             if not ipnum:
                 raise ValueError("Invalid IP address: %s" % addr)
             
-            if self._databaseType not in (ORG_EDITION, ISP_EDITION, ASNUM_EDITION):
+            if self._databaseType not in (const.ORG_EDITION, const.ISP_EDITION, const.ASNUM_EDITION):
                 raise GeoIPError('Invalid database type; org_* methods expect '\
                                  'Org/ISP database')
                 
@@ -517,7 +527,7 @@ class GeoIP(GeoIPBase):
             if not ipnum:
                 raise ValueError("Invalid IP address: %s" % addr)
                 
-            if not self._databaseType in (CITY_EDITION_REV0, CITY_EDITION_REV1):
+            if not self._databaseType in (const.CITY_EDITION_REV0, const.CITY_EDITION_REV1):
                 raise GeoIPError('Invalid database type; record_* methods expect City database')
             
             return self._get_record(ipnum)
@@ -557,8 +567,8 @@ class GeoIP(GeoIPBase):
             if not ipnum:
                 raise ValueError("Invalid IP address: %s" % addr)
                 
-            if not self._databaseType in (REGION_EDITION_REV0, REGION_EDITION_REV1,
-                                          CITY_EDITION_REV0, CITY_EDITION_REV1):
+            if not self._databaseType in (const.REGION_EDITION_REV0, const.REGION_EDITION_REV1,
+                                          const.CITY_EDITION_REV0, const.CITY_EDITION_REV1):
                 raise GeoIPError('Invalid database type; region_* methods expect '\
                                  'Region or City database')
                 
