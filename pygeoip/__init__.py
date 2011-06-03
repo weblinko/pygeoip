@@ -278,8 +278,8 @@ class GeoIP(GeoIPBase):
                 
         elif self._databaseType in (CITY_EDITION_REV0, CITY_EDITION_REV1):
             rec = self._get_record(ipnum)
-            country_code = rec['country_code'] 
-            region = rec['region_name']
+            country_code = rec['country_code'] if 'country_code' in rec else ''
+            region = rec['region_name'] if 'region_name' in rec else ''
             
         return {'country_code' : country_code, 'region_name' : region }  
     
