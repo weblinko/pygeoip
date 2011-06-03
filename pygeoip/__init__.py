@@ -381,6 +381,11 @@ class GeoIP(GeoIPBase):
             record['dma_code'] = 0
             record['area_code'] = 0
                 
+        if 'dma_code' in record and record['dma_code'] in DMA_MAP:
+            record['metro_code'] = DMA_MAP[record['dma_code']]
+        else:
+            record['metro_code'] = ''
+                
         return record
     
     def country_code_by_addr(self, addr):
