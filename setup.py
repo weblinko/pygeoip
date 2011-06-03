@@ -30,12 +30,17 @@ except ImportError:
     from setuptools import setup, find_packages
 
 setup(name='pygeoip',
-      version='0.1.6',
+      version='0.2',
       description='Pure Python GeoIP API',
       author='Jennifer Ennis',
       author_email='zaylea@gmail.com',
       url='http://code.google.com/p/pygeoip/',
-      install_requires=['six'],
+      install_requires=['six>=1.0'],
+      classifiers=[
+      # make sure to use :: Python *and* :: Python :: 3 so
+      # that pypi can list the package on the python 3 page
+            'Programming Language :: Python',
+            'Programming Language :: Python :: 3'],
       packages=find_packages(exclude=['tests','test_*','data','apidocs']),
       license='LGPL',
       keywords='geoip')
