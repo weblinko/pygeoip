@@ -38,6 +38,10 @@ from .util import ip2long
 
 import six
 
+MMAP_CACHE = const.MMAP_CACHE
+MEMORY_CACHE = const.MEMORY_CACHE
+STANDARD = const.STANDARD
+
 class GeoIPError(Exception):
     pass
 
